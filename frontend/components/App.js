@@ -1,4 +1,8 @@
-import React from 'react'
+import React from 'react';
+import TodoList from './TodoList';
+import Form from './Form';
+import Todo from './Todo';
+import axios from 'axios';
 
 const URL = 'http://localhost:9000/api/todos'
 
@@ -11,6 +15,21 @@ export default class App extends React.Component {
     displayCompleted: true,
   }
 
+  fetchAllTodos = () => {
+    axios.get(URL)
+      .then(res => {
+        this.setState({
+          ...this.state,
+          todos: res.data.data
+        })
+      })
+      .catch(err => console.log(err))
+  }
+
+  componentDidMount() {
+    this.fetchAllTodos()
+  }
+
   render() {
     return (
       <div>
@@ -18,8 +37,11 @@ export default class App extends React.Component {
         <div id="error">Error: No error here</div>
         <div id="todos">
           <h2>Todos:</h2>
-          <div>Walk the dog</div>
-          <div>Finish MyAdmin Project</div>
+          {
+            this.state.todos.map(td => {
+              return <div key={td.id}>{td.name}</div>
+            })
+          }
         </div>
         <form>
           <input type="text" placeholder="Type Todo"></input>
