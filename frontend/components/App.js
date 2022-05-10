@@ -1,10 +1,9 @@
 import React from 'react';
-import TodoList from './TodoList';
-import Form from './Form';
-import Todo from './Todo';
 import axios from 'axios';
+import TodoForm from './Form';
+import TodoList from './TodoList';
 
-const URL = 'http://localhost:9000/api/todos'
+const URL = "http://localhost:9000/api/todos"
 
 export default class App extends React.Component {
 
@@ -15,29 +14,36 @@ export default class App extends React.Component {
     displayCompleted: true,
   }
 
-  onTodoNameInputChange = (evt) => {
+  onTodoNameInputChange = evt => {
     const { value } = evt.target;
     this.setState({
       ...this.state,
       todoNameInput: value
-    });
+    })
   }
+
+  resetForm = () =>
+    this.setState({
+      ...this.state, todoNameInput: ""
+    })
+
+  setAxiosResponseError = err =>
+    this.setState({
+      ...this.state,
+      error: err.respone.data.message
+    })
 
   postNewTodo = () => {
     axios.post(URL, { name: this.state.todoNameInput })
       .then(res => {
-        this.fetchAllTodos()
         this.setState({
           ...this.state,
-          todoNameInput: ""
-        });
-      })
-      .catch(err => {
-        this.setState({
-          ...this.state,
-          error: err.response.data.message
+          todos:
+            this.state.todos.concat(res.data.data)
         })
+        this.resetForm()
       })
+      .catch(this.setAxiosResponseError)
   }
 
   onTodoFormSubmit = evt => {
@@ -53,12 +59,27 @@ export default class App extends React.Component {
           todos: res.data.data
         })
       })
-      .catch(err => {
+      .catch(this.setAxiosResponseError)
+  }
+
+  toggleCompleted = id => () => {
+    axios.patch(`${URL}/${id}`)
+      .then(res => {
         this.setState({
-          ...this.state,
-          error: err.response.data.message
+          ...this.state, todos: this.state.todos.map(todo => {
+            if (todo.id !== id) return todo
+            return res.data.data
+          })
         })
       })
+      .catch(this.setAxiosResponseError)
+  }
+
+  toggleDisplayCompleted = () => {
+    this.setState({
+      ...this.state,
+      displayCompleted: !this.state.displayCompleted
+    })
   }
 
   componentDidMount() {
@@ -68,29 +89,20 @@ export default class App extends React.Component {
   render() {
     return (
       <div>
-        <h1>Todo App</h1>
         <div id="error">{this.state.error}</div>
-        <div id="todos">
-          <h2>Todos:</h2>
-          {
-            this.state.todos.map(td => {
-              return <div key={td.id}>{td.name}</div>
-            })
-          }
-        </div>
-        <form onSubmit={this.onTodoFormSubmit} >
-          <input
-            value={this.state.todoNameInput}
-            type="text"
-            placeholder="Type Todo"
-            onChange={this.onTodoNameInputChange}
-          >
-          </input>
-          <input type="submit"></input>
-        </form>
-        <button>Clear Completed</button>
+        <TodoList
+          todos={this.state.todos}
+          displayCompleted={this.state.displayCompleted}
+          toggleCompleted={this.toggleCompleted}
+        />
+        <TodoForm
+          onTodoFormSubmit={this.onTodoFormSubmit}
+          onTodoNameInputChange={this.onTodoNameInputChange}
+          toggleDisplayCompleted={this.toggleDisplayCompleted}
+          todoNameInput={this.state.todoNameInput}
+          displayCompleted={this.state.displayCompleted}
+        />
       </div>
     )
   }
 }
-
